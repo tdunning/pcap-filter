@@ -39,10 +39,15 @@ patterns. Here are results from a different test that reads a GB using different
 reads:
 
 | Read size | Total size | Time | Speed |
-| === | === | ===|
-| 50 | 1000.0 MB | 15.8 s | 63.1 MB/s |
-| 100 | 1000.0 MB | 7.9 s | 127.2 MB/s |
-| 200 | 1000.0 MB | 4.2 s | 240.8 MB/s |
-| 500 | 1000.0 MB | 1.8 s | 546.3 MB/s |
-| 1000 | 1000.0 MB | 1.0 s | 985.9 MB/s |
-| 10000 | 1000.0 MB | 0.4 s | 2519.4 MB/s |
+| ---------: | ---------- | ----: | -----: |
+| 50| 1000.0 MB | 15.8 s: | 63.1 MB/s |
+| 100| 1000.0 MB | 7.9 s | 127.2 MB/s |
+| 200| 1000.0 MB | 4.2 s | 240.8 MB/s |
+| 500| 1000.0 MB | 1.8 s | 546.3 MB/s |
+| 1000| 1000.0 MB | 1.0 s | 985.9 MB/s |
+| 10000| 1000.0 MB | 0.4 s | 2519.4 MB/s |
+
+
+That looks like this with a bit more resolution on it:
+
+<img src='speed-graph.png' width=500 height=400>
