@@ -10,7 +10,9 @@ interrogated directly from the bytes in question on demand which increases speed
 further by avoiding the decoding of data that just gets thrown away.
 
 The tests in this project are really demonstration programs that show how much 
-difference this can make.
+difference this can make. You can run these tests using
+
+    mvn test
 
 ## Just how fast is it?
 
