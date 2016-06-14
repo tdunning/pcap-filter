@@ -29,7 +29,6 @@ public class PacketDecoderTest {
             writeHeader(out);
         }
 
-        byte[] buf = new byte[4];
         try (InputStream in = new FileInputStream(f)) {
             PacketDecoder pd = new PacketDecoder(in);
             assertTrue(pd.isBigEndian());
@@ -70,7 +69,7 @@ public class PacketDecoderTest {
      * @throws IOException
      */
     @Test
-    public void testSpeed() throws IOException {
+    public void testConventionalApproach() throws IOException {
         InputStream in = new FileInputStream(bigFile);
         PacketDecoder pd = new PacketDecoder(in);
         PacketDecoder.Packet p = pd.nextPacket();
@@ -87,7 +86,7 @@ public class PacketDecoderTest {
             } else if (p.isUdpPacket()) {
                 udpCount++;
             }
-            // compare to pd.decodePacket() as used in testBufferDecode
+            // compare to pd.decodePacket() as used in testFastApproach
             p = pd.nextPacket();
         }
         long t1 = System.nanoTime();
@@ -103,7 +102,7 @@ public class PacketDecoderTest {
      * @throws IOException
      */
     @Test
-    public void testBufferDecode() throws IOException {
+    public void testFastApproach() throws IOException {
         InputStream in = new FileInputStream(bigFile);
         PacketDecoder pd = new PacketDecoder(in);
         PacketDecoder.Packet p = pd.packet();
