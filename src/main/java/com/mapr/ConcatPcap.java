@@ -6,13 +6,14 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Created by tdunning on 11/10/15.
+ * Concatenates PCAP files. The only trickiness is that we have to skip the
+ * 24 byte header on all but the first file.
  */
 public class ConcatPcap {
     public static void main(String[] args) throws IOException {
         try (DataOutputStream out = new DataOutputStream(System.out)) {
-            boolean first = true;
             if (args.length > 0) {
+                boolean first = true;
                 for (String arg : args) {
                     try (FileInputStream in = new FileInputStream(arg)) {
                         copy(first, in, out);
@@ -20,16 +21,23 @@ public class ConcatPcap {
                     }
                 }
             } else {
-                copy(first, System.in, out);
+                copy(true, System.in, out);
             }
         }
     }
 
-
-    private static void copy(boolean first, InputStream in, DataOutputStream out) throws IOException {
+    /**
+     * Concatenates a stream onto the output.
+     * @param first   Is this the beginning of the output?
+     * @param in      The data to copy to the output
+     * @param out     Where the output should go
+     * @throws IOException
+     */
+    public static void copy(boolean first, InputStream in, DataOutputStream out) throws IOException {
         byte[] buffer = new byte[1024 * 1024];
         int n;
         if (!first) {
+            //noinspection UnusedAssignment
             n = (int) in.skip(6 * 4L);
         }
         n = in.read(buffer);

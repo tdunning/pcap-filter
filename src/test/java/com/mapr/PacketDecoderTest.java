@@ -2,6 +2,7 @@ package com.mapr;
 
 import com.google.common.io.Resources;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.DataInputStream;
@@ -16,10 +17,10 @@ import java.io.InputStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by tdunning on 11/10/15.
- */
 public class PacketDecoderTest {
+
+    private static File bigFile;
+
     @Test
     public void testByteOrdering() throws IOException {
         File f = File.createTempFile("foo", "pcap");
@@ -61,10 +62,16 @@ public class PacketDecoderTest {
         out.writeInt(1);                 // ETHERNET
     }
 
+    /**
+     * This tests the speed when creating an actual object for each packet.
+     *
+     * That isn't very fast.
+     *
+     * @throws IOException
+     */
     @Test
     public void testSpeed() throws IOException {
-//        DataInputStream in = Resources.getResource("data-20M.pcap").openStream();
-        InputStream in = new FileInputStream("tcp-5.pcap");
+        InputStream in = new FileInputStream(bigFile);
         PacketDecoder pd = new PacketDecoder(in);
         PacketDecoder.Packet p = pd.nextPacket();
         long total = 0;
@@ -80,16 +87,24 @@ public class PacketDecoderTest {
             } else if (p.isUdpPacket()) {
                 udpCount++;
             }
+            // compare to pd.decodePacket() as used in testBufferDecode
             p = pd.nextPacket();
         }
         long t1 = System.nanoTime();
-        System.out.printf("Read %.1f MB in %.2f s for %.1f MB/s\n", total / 1e6, (t1 - t0) / 1e9, (double) total * 1e3 / (t1 - t0));
-        System.out.printf("%d packets, %d TCP packets, %d UDP\n", allCount, tcpCount, udpCount);
+        System.out.printf("\nSpeed test for per packet object\n");
+        System.out.printf("    Read %.1f MB in %.2f s for %.1f MB/s\n", total / 1e6, (t1 - t0) / 1e9, (double) total * 1e3 / (t1 - t0));
+        System.out.printf("    %d packets, %d TCP packets, %d UDP\n", allCount, tcpCount, udpCount);
+        System.out.printf("\n\n\n");
     }
 
+    /**
+     * Tests speed for in-place decoding. This is enormously faster than creating objects, largely
+     * because we rarely have to move any data. Instead, we can examine as it lies in the buffer.
+     * @throws IOException
+     */
     @Test
     public void testBufferDecode() throws IOException {
-        InputStream in = new FileInputStream("tcp-5.pcap");
+        InputStream in = new FileInputStream(bigFile);
         PacketDecoder pd = new PacketDecoder(in);
         PacketDecoder.Packet p = pd.packet();
 
@@ -124,15 +139,46 @@ public class PacketDecoderTest {
             }
         }
         long t1 = System.nanoTime();
-        System.out.printf("Read %.1f MB in %.2f s for %.1f MB/s\n", total / 1e6, (t1 - t0) / 1e9, (double) total * 1e3 / (t1 - t0));
-        System.out.printf("%d packets, %d TCP packets, %d UDP\n", allCount, tcpCount, udpCount);
-
+        System.out.printf("\nSpeed test for in-place packet decoding\n");
+        System.out.printf("    Read %.1f MB in %.2f s for %.1f MB/s\n", total / 1e6, (t1 - t0) / 1e9, (double) total * 1e3 / (t1 - t0));
+        System.out.printf("    %d packets, %d TCP packets, %d UDP\n", allCount, tcpCount, udpCount);
+        System.out.printf("\n\n\n");
     }
 
+    /**
+     * Creates an ephemeral file of about a GB in size
+     * @throws IOException
+     */
+
+    @BeforeClass
+    public static void buildBigTcpFile() throws IOException {
+        bigFile = File.createTempFile("tcp", ".pcap");
+        bigFile.deleteOnExit();
+        boolean first = true;
+        System.out.printf("Building large test file\n");
+        try (DataOutputStream out = new DataOutputStream(new FileOutputStream(bigFile))) {
+            for (int i = 0; i < 1000e6 / (29208 - 24) + 1; i++) {
+                // might be faster to keep this open and rewind each time, but
+                // that is hard to do with a resource, especially if it comes
+                // from the class path instead of files.
+                try (InputStream in = Resources.getResource("tcp-2.pcap").openStream()) {
+                    ConcatPcap.copy(first, in, out);
+                }
+                first = false;
+            }
+            System.out.printf("Created file is %.1f MB\n", bigFile.length() / 1e6);
+        }
+    }
+
+    /**
+     * Compares how fast we can read a big file with different size reads. This tells
+     * us what changes when we read many packets from the file at once.
+     * @throws IOException
+     */
     @Test
     public void testBigReads() throws IOException {
-        for (int size : new int[]{10, 10, 10, 20, 50, 100, 200, 500, 1000, 10000}) {
-            try (InputStream in = new FileInputStream("tcp-5.pcap")) {
+        for (int size : new int[]{50, 100, 200, 500, 1000, 10000}) {
+            try (InputStream in = new FileInputStream(bigFile)) {
                 long t0 = System.nanoTime();
                 byte[] buf = new byte[size];
                 long total = 0;
@@ -149,5 +195,6 @@ public class PacketDecoderTest {
             }
 
         }
+        System.out.flush();
     }
 }
