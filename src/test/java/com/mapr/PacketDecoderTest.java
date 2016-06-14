@@ -176,7 +176,7 @@ public class PacketDecoderTest {
      */
     @Test
     public void testBigReads() throws IOException {
-        for (int size : new int[]{50, 100, 200, 500, 1000, 10000}) {
+        for (int size : new int[]{50, 100, 200, 500, 1000, 2000, 3000, 4000, 5000, 6000, 8000, 10000}) {
             try (InputStream in = new FileInputStream(bigFile)) {
                 long t0 = System.nanoTime();
                 byte[] buf = new byte[size];
